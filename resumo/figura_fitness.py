@@ -16,14 +16,14 @@ a.fill_between(x,B.mean(0)-B.std(0),B.mean(0)+B.std(0),color="#4C72B0",alpha=.3,
 a.plot(x,M.mean(0),color="#4C72B0",lw=1,ls="--",label="média da população")
 a.set_title("(a) Blues shuffle em Lá, 5 sementes")
 a.set_ylabel("Fitness"); a.set_ylim(0.5,1); a.grid(alpha=.3); a.legend(loc="lower right",fontsize=6.5)
-groups=[("base","mutação 0,3 (padrão)","#4C72B0","-"),("mut0.1","mutação 0,1","#55A868","-"),
-        ("mut0.6","mutação 0,6","#C44E52","-"),("uniform","inicialização uniforme","#8172B2","--"),
-        ("nolick","sem licks","#937860",":")]
+groups=[("imm0.0","sem imigrantes","#C44E52",":"),("base","5% (padrão)","#4C72B0","-"),
+        ("imm0.15","15%","#55A868","--")]
 for e,l,c,ls in groups:
     rs=[r for r in R if r["exp"]==e and r["seed"]<=3]
-    b.plot(arr(rs,"best").mean(0),color=c,ls=ls,lw=1.2,label=l)
-b.set_title("(b) Melhor indivíduo por configuração, 3 sementes")
-b.set_xlabel("Geração"); b.set_ylabel("Fitness"); b.set_ylim(0.4,0.99); b.grid(alpha=.3); b.legend(loc="lower right",fontsize=6,ncol=2,framealpha=0.9)
+    b.plot(arr(rs,"diversity").mean(0),color=c,ls=ls,lw=1.2,label=l)
+b.set_title("(b) Diversidade por taxa de imigrantes, 3 sementes")
+b.set_xlabel("Geração"); b.set_ylabel("Diversidade"); b.set_ylim(0,0.45); b.grid(alpha=.3)
+b.legend(loc="upper right",fontsize=6.5)
 from matplotlib.ticker import FuncFormatter
 for ax in (a, b):
     ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1f}".replace(".", ",")))

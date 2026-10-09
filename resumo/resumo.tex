@@ -46,9 +46,9 @@ a de um solo sobre uma progressão de acordes fixa em um gênero popular; o caso
 é o blues de 12 compassos na levada \emph{blues shuffle}, e há 19 levadas de 10 gêneros
 disponíveis. Cada indivíduo é uma matriz de inteiros sobre uma grade rítmica, avaliada por uma
 fitness heurística de 10 critérios de teoria musical e fraseado, calculada em relação
-aos acordes e à levada da base. Uma biblioteca de 25 \emph{licks} (frases curtas típicas de
+aos acordes da base. Uma biblioteca de 25 \emph{licks} (frases curtas típicas de
 cada estilo) é usada na população inicial e em uma mutação dedicada. Em 5 sementes no
-blues, a fitness do melhor indivíduo sobe de 0,80 para $0{,}966\pm0{,}004$ em 300
+blues, a fitness do melhor indivíduo sobe de 0,80 para $0{,}966\pm0{,}003$ em 300
 gerações; sem licks, os critérios de teoria continuam atendidos, mas o solo perde o
 vocabulário do gênero.
 \end{abstract}
@@ -59,8 +59,8 @@ Improvisar um solo é buscar, sob restrições de harmonia e ritmo, uma frase qu
 dentro do estilo, problema adequado a um AG, que combina variação aleatória com seleção
 guiada por uma função de aptidão (fitness). O sistema foi implementado em Python: o usuário escolhe progressão, tonalidade, levada e
 andamento em batidas por minuto (bpm); o sistema gera a base (bateria, baixo e harmonia)
-e depois evolui um solo avaliado \emph{em contexto}, isto é, contra os acordes e a
-levada efetivamente tocados.
+e depois evolui um solo avaliado \emph{em contexto}, isto é, contra os acordes
+efetivamente tocados.
 
 \section{Trabalhos Relacionados}
 
@@ -79,20 +79,19 @@ dividido em $s$ posições (\emph{slots}), num total de $N=4Cs$. O valor de $s$ 
 figura rítmica que não ultrapassa 13 notas por segundo no andamento, limite adotado para
 manter o solo tocável: no blues shuffle a 100~bpm, cujo \emph{swing} divide o tempo em
 três, usa-se a sextina (seis notas por tempo); no thrash metal a 180~bpm, a
-semicolcheia (quatro). O indivíduo é uma matriz $G\in\mathbb{Z}^{4\times N}$. A linha de melodia
+semicolcheia (quatro). O indivíduo é uma matriz $G\in\mathbb{Z}^{4\times N}$ cuja linha de melodia
 guarda, em cada posição, uma pausa ($-1$), a sustentação da nota anterior ($-2$) ou o
 ataque de uma nota, representada pelo índice $0..P{-}1$ na escala do solo, limitada à
 extensão de Sol 3 a Ré 6 ($P$ entre 17 e 24 notas). As outras linhas guardam a nota
 dupla (uma segunda nota tocada junto, em semitons de distância), a articulação
 (\emph{bend}, em que a corda é puxada para subir a nota, ou deixar a nota soar) e a
-origem (qual lick escreveu aquela posição, informação que não altera o som). A escala
+origem (qual lick escreveu a posição, sem efeito no som). A escala
 do solo vem da levada e do modo da música (ex.: modo frígio, escala menor com a segunda
 abaixada, no thrash metal) ou é escolhida pelo usuário entre 14 opções.
 
 \textbf{População inicial.} Foram usados 120 indivíduos, construídos tempo a tempo:
 cada tempo recebe uma pausa, a sustentação da nota anterior, de uma a três notas ou uma
-sequência rápida de notas. As alturas seguem um passeio aleatório pela escala, que gera
-melodias com passos curtos, e cada compasso recebe um lick com probabilidade 0,3. Os
+sequência rápida de notas. As alturas seguem um passeio aleatório pela escala, e cada compasso recebe um lick com probabilidade 0,3. Os
 licks são sorteados conforme a afinidade com o gênero e ajustados ao acorde e à escala.
 
 \textbf{Fitness.} A fitness é a média ponderada $F=\sum_c w_c\,s_c/\sum_c w_c$ dos
@@ -132,73 +131,81 @@ entre compassos para não partir uma nota ou frase ao meio. Cada filho passa por
 quatro tentativas de mutação, cada uma com probabilidade 0,3; os dez tipos incluem
 mover uma nota na escala, copiar um compasso transposto (o que cria motivos), inserir
 uma sequência rápida, mudar a nota dupla ou a articulação e inserir um lick. Mutações que alteram um lick são
-desfeitas com probabilidade 0,7, para que os licks variem devagar.
+desfeitas com probabilidade 0,7, para que os licks variem devagar. Para conter a perda
+de diversidade, a cada geração 5\% da população é trocada por imigrantes aleatórios,
+gerados como na população inicial, que repõem material genético eliminado pela seleção.
 
-\textbf{Parada e síntese.} A evolução termina após 300 gerações ou 80 sem melhora do
-melhor indivíduo; assim, cada execução leva menos de um minuto.
-O áudio, só para audição, é sintetizado com o FluidSynth.
+\textbf{Parada.} A evolução termina após 300 gerações ou 80 sem melhora do melhor
+indivíduo; assim, cada execução leva cerca de um minuto.
 
 \section{Resultados}
 
 \begin{figure}[t]
 \centerline{\includegraphics[width=\columnwidth]{fitness.pdf}}
 \caption{Evolução da fitness. (a) Melhor indivíduo (média $\pm$ desvio-padrão), média
-da população e faixa entre o pior e o melhor; 5 sementes, parâmetros padrão. (b) Melhor
-indivíduo ao variar um hiperparâmetro por vez.}
+da população e faixa pior--melhor. (b) Diversidade
+da população para três taxas de imigrantes.}
 \label{fig:fitness}
 \end{figure}
 
 \begin{table}[t]
-\centering\footnotesize\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}l c c c@{}}
+\centering\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l c c c c@{}}
 \toprule
-Configuração & $F$ final & Ger.\ até 0,95 & Licks \\
+Configuração & $F$ final & Ger.\ até 0,95 & Div. & Licks \\
 \midrule
-blues shuffle, padrão (5 sem.) & $0{,}966\pm0{,}004$ & 133 & 11,4\\
-\quad mutação 0,1 & $0{,}964\pm0{,}003$ & 161 & 10,7\\
-\quad mutação 0,6 & $0{,}960\pm0{,}002$ & 159 & 12,0\\
-\quad inicialização uniforme & $0{,}964\pm0{,}004$ & 129 & 13,0\\
-\quad sem licks & $0{,}878\pm0{,}006$ & -- & 0\\
+blues shuffle (5 sementes) & $0{,}966\pm0{,}003$ & 130 & 0,06 & 13,2\\
+\quad mutação 0,1 & $0{,}967\pm0{,}002$ & 155 & 0,05 & 12,3\\
+\quad mutação 0,6 & $0{,}959\pm0{,}002$ & 177 & 0,10 & 13,0\\
+\quad sem imigrantes & $0{,}969\pm0{,}004$ & 119 & 0,02 & 11,3\\
+\quad imigrantes 15\% & $0{,}964\pm0{,}002$ & 144 & 0,14 & 11,0\\
+\quad início uniforme & $0{,}964\pm0{,}002$ & 142 & 0,06 & 12,0\\
+\quad sem licks & $0{,}879\pm0{,}003$ & -- & 0,07 & 0\\
 \midrule
-thrash metal (Mi menor) & $0{,}936\pm0{,}003$ & -- & 7,7\\
-hard rock (Mi menor) & $0{,}950\pm0{,}004$ & 176$^*$ & 9,7\\
-funk (Mi menor) & $0{,}973\pm0{,}004$ & 58 & 10,0\\
-balada pop (Dó maior) & $0{,}958\pm0{,}006$ & 175 & 10,0\\
+thrash metal (Mi menor) & $0{,}940\pm0{,}002$ & -- & 0,12 & 7,0\\
+hard rock (Mi menor) & $0{,}942\pm0{,}005$ & -- & 0,10 & 12,0\\
+funk (Mi menor) & $0{,}972\pm0{,}002$ & 85 & 0,06 & 10,0\\
+balada pop (Dó maior) & $0{,}957\pm0{,}002$ & 186 & 0,04 & 9,0\\
 \bottomrule
 \end{tabular}
 \caption{Fitness final, geração em que o melhor indivíduo atinge 0,95 (média entre
-sementes) e número de licks com pelo menos metade das notas intactas no solo final.
-Blues shuffle: 12 compassos em Lá a 100~bpm, tocados duas vezes. Três sementes por
-linha, salvo indicação. $^*$Só uma das três sementes atingiu 0,95.}
+sementes), diversidade final e licks com pelo menos metade das notas intactas no solo
+final. Blues shuffle: 12 compassos em Lá a 100~bpm, tocados duas vezes. Três sementes
+por linha, salvo indicação.}
 \label{tab:results}
 \end{table}
 
-\textbf{Protocolo.} Foram variados, um de cada vez, a semente, a taxa de mutação, a
-inicialização, a presença de licks e o gênero, em 29 execuções
-(Tabela~\ref{tab:results}), todas reproduzíveis por um script incluído no repositório.
+\textbf{Protocolo.} Semente, mutação, imigrantes, inicialização, licks e gênero
+foram variados um de cada vez, em 35 execuções (Tabela~\ref{tab:results}),
+reproduzíveis por script.
 
 \textbf{Convergência.} A Figura~\ref{fig:fitness}a mostra o comportamento típico: subida
 rápida nas primeiras 50 gerações (de 0,80 para 0,92) e, depois, ganhos pequenos até a
-geração 300 (0,94 na geração 100 e 0,96 na 200). A média da população acompanha o
-melhor de perto, sinal de perda de diversidade cedo. Sementes diferentes dão solos diferentes com fitness quase igual.
+geração 300 (0,94 na geração 100 e 0,96 na 200). Sementes diferentes dão solos
+diferentes com fitness quase igual.
 
-\textbf{Hiperparâmetros.} Com mutação 0,3, o melhor indivíduo chegou a 0,95 cerca
-de 27 gerações antes do que com 0,1 (pouca exploração) ou 0,6 (desfaz frases boas),
-mas as fitness finais ficam a um desvio-padrão umas das outras. A inicialização por
-passeio aleatório começa acima da uniforme (0,80 contra 0,78), vantagem que some. Sem licks, o
+\textbf{Diversidade.} Medida pela fração média de posições da melodia em que dois
+indivíduos diferem, cai de 0,42 para 0,02 sem imigrantes (Figura~\ref{fig:fitness}b),
+sinal de convergência prematura. Com 5\% de imigrantes ela se estabiliza em 0,06, e com
+15\% em 0,14, sem mudança relevante na fitness final; o custo é chegar a 0,95 mais
+tarde (119, 130 e 144 gerações).
+
+\textbf{Hiperparâmetros.} Com mutação 0,3, o melhor indivíduo chegou a 0,95 antes
+do que com 0,1 (pouca exploração) e 0,6 (desfaz frases boas); a fitness final só cai
+com 0,6. A inicialização por passeio aleatório começa acima da uniforme (0,80 contra
+0,78) e chega antes a 0,95. Sem licks, o
 critério de idioma fica em zero e limita $F$ a $15{,}5/17\approx0{,}912$; descontado
-isso, os demais critérios ficam tão altos quanto no padrão (0,963). Ou seja, a
-teoria é atendida sem o vocabulário do gênero, que vem só dos licks.
+isso, os demais critérios ficam tão altos quanto no padrão (0,964). A teoria é atendida sem o vocabulário do gênero, que vem só dos licks.
 
-\textbf{Gêneros.} O funk converge mais rápido (58 gerações), possivelmente porque a progressão alterna
-só dois acordes e as frases sincopadas dos licks se encaixam nela. O thrash metal é o
+\textbf{Gêneros.} O funk, sobre só dois acordes, converge mais rápido (85
+gerações). O thrash metal é o
 caso mais difícil: os \emph{power chords}, acordes formados só pela fundamental e pela
-quinta, oferecem apenas duas notas do acorde, o que reduz a harmonia para 0,84. No hard rock, a densidade fica abaixo do alvo (0,83).
+quinta, oferecem apenas duas notas do acorde, o que reduz a harmonia para 0,86.
 
 % TODO(autor): conferir a descrição qualitativa abaixo ouvindo os MP3.
 \textbf{Músicas.} A pasta \texttt{musicas/} do
 repositório\footnote{\url{https://github.com/ThiagoHSAl/guitar-solo-ga}} traz cinco
-peças (MP3 e MIDI) com gênero, escala, andamento e semente diferentes: blues shuffle em Lá (escala blues, 100~bpm), thrash metal em Mi (modo
+peças (MP3 e MIDI): blues shuffle em Lá (escala blues, 100~bpm), thrash metal em Mi (modo
 frígio, 180~bpm), hard rock em Mi (modo dórico, escala menor com a sexta elevada,
 126~bpm), funk em Mi (dórico, 96~bpm) e balada pop em Dó (escala maior, 72~bpm).
 Os solos usam notas do acorde nos tempos fortes, alternam trechos rápidos e notas
@@ -207,13 +214,15 @@ longas com bends e terminam na tônica.
 \section{Discussão e Trabalhos Futuros}
 
 A principal limitação é que a fitness mede conformidade com regras, não qualidade
-musical: valores acima de 0,95 são atingidos com facilidade, e diferenças pequenas de
-$F$ não correspondem necessariamente a diferenças audíveis. Pesos, alvos e licks foram definidos à mão, o que introduz um viés do autor, e não
-houve avaliação com ouvintes. Como extensões, são
-propostos: (i) um teste de audição; (ii) uma fitness interativa ou híbrida, como no
-GenJam~\cite{biles1994}; (iii) aprender alvos e licks de um corpus de solos transcritos;
-e (iv) otimização multiobjetivo, como o NSGA-II (\emph{Non-dominated Sorting Genetic
-Algorithm II}), em vez de pesos fixos.
+musical: valores acima de 0,95 são fáceis de atingir e pequenas diferenças de $F$ não
+são necessariamente audíveis. Pesos, alvos e licks foram definidos à mão e não houve avaliação com ouvintes. A
+biblioteca tem poucos licks (de um a cinco por gênero) e o critério de idioma
+recompensa usá-los; assim, solos do mesmo gênero repetem as mesmas frases, um forte
+viés. Extensões propostas:
+(i) teste de audição; (ii) fitness interativa ou híbrida, como no
+GenJam~\cite{biles1994}; (iii) alvos e licks aprendidos de solos transcritos; (iv)
+otimização multiobjetivo, como o NSGA-II (\emph{Non-dominated Sorting Genetic Algorithm
+II}).
 
 \bibliography{refs}
 

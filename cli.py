@@ -104,7 +104,8 @@ def cmd_solo(args):
                        lick_coverage=args.lick_coverage)
     params = GAParams(pop_size=args.pop, generations=args.gens, crossover_rate=args.crossover,
                       mutation_rate=args.mutation, tournament_k=args.tournament,
-                      elitism=args.elitism, patience=args.patience, init=args.init,
+                      elitism=args.elitism, immigrants=args.immigrants,
+                      patience=args.patience, init=args.init,
                       seed=args.seed, grid=_parse_grid(args.fastest),
                       lick_rate=args.lick_rate, fitness=fp)
 
@@ -194,6 +195,8 @@ def main():
     g.add_argument("--mutation", type=float, default=d.mutation_rate)
     g.add_argument("--tournament", type=int, default=d.tournament_k)
     g.add_argument("--elitism", type=int, default=d.elitism)
+    g.add_argument("--immigrants", type=float, default=d.immigrants,
+                   help="fração da população trocada por indivíduos aleatórios a cada geração")
     g.add_argument("--patience", type=int, default=d.patience)
     g.add_argument("--init", choices=["walk", "uniform"], default=d.init)
     g.add_argument("--seed", type=int, default=d.seed)

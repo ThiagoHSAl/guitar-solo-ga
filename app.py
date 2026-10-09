@@ -245,7 +245,10 @@ def _solo_panel(cfg: SongConfig):
         crossover = b2.slider("Taxa de cruzamento", 0.0, 1.0, 0.9, 0.05)
         tour = b3.slider("Tamanho do torneio", 2, 10, 3)
         elitism = b4.slider("Elitismo", 0, 10, 2)
-        c1, c2 = st.columns(2)
+        c1, c2, c3 = st.columns(3)
+        immigrants = c3.slider("Imigrantes por geração (fração)", 0.0, 0.3, 0.05, 0.01,
+                               help="Indivíduos novos que entram a cada geração para "
+                                    "manter a diversidade da população.")
         lick_cov = c1.slider("Cobertura de licks alvo (fração do solo)", 0.0, 0.8, 0.35,
                              0.05)
         solo_db = c2.slider("Solo acima da base (dB)", 0.0, 15.0, 7.0, 0.5)
@@ -259,6 +262,7 @@ def _solo_panel(cfg: SongConfig):
     if go:
         params = GAParams(pop_size=int(pop), generations=int(gens), crossover_rate=crossover,
                           mutation_rate=mutation, tournament_k=tour, elitism=elitism,
+                          immigrants=immigrants,
                           patience=int(patience), init=init, seed=int(seed),
                           grid=None if grid == "auto" else grid, lick_rate=lick_rate,
                           fitness=FitnessParams(weights=weights, density=density,

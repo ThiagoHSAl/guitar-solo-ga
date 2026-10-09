@@ -13,7 +13,7 @@ from ..config import SongConfig
 from ..licks import LICKS
 from ..rhythms import SOLO_SPEED
 from .fitness import FitnessParams, evaluate
-from .genome import SRC, SoloSpace, build_space, lick_slots, random_genome
+from .genome import MEL, SRC, SoloSpace, build_space, lick_slots, random_genome
 from .operators import crossover, mutate, tournament
 
 
@@ -25,6 +25,8 @@ class GAParams:
     mutation_rate: float = 0.3        # probabilidade de cada uma das (até 4) mutações por filho
     tournament_k: int = 3
     elitism: int = 2
+    immigrants: float = 0.05          # fração da população trocada por indivíduos novos a
+                                      # cada geração (imigrantes aleatórios: mantém diversidade)
     patience: int = 80                # para se o melhor não melhora por N gerações
     init: str = "walk"                # "walk" ou "uniform"
     lick_rate: float = 0.3            # chance de lick por compasso na população inicial;
@@ -43,12 +45,22 @@ class GAResult:
     best: np.ndarray
     best_fitness: float
     breakdown: dict[str, float]
-    history: dict[str, list[float]]   # best / mean / worst por geração
+    history: dict[str, list[float]]   # best / mean / worst / diversity por geração
     generations_run: int
     stop_reason: str
     elapsed_sec: float
     space: SoloSpace
     fitness_params: FitnessParams     # com densidade/shred já resolvidos
+
+
+def diversity(pop: np.ndarray) -> float:
+    """Distância de Hamming média entre pares de indivíduos, na linha de melodia (0 a 1)."""
+    mel = pop[:, MEL]
+    n = len(mel)
+    if n < 2:
+        return 0.0
+    diff = (mel[:, None, :] != mel[None, :, :]).mean(axis=2)
+    return float(diff.sum() / (n * (n - 1)))
 
 
 def resolve_fitness(cfg: SongConfig, fp: FitnessParams) -> FitnessParams:
@@ -90,7 +102,7 @@ def run_ga(cfg: SongConfig, params: GAParams, progress: ProgressFn | None = None
                                   params.lick_rate) for _ in range(params.pop_size)])
     fit = np.array([evaluate(g, space, fp)[0] for g in pop])
 
-    hist = {"best": [], "mean": [], "worst": []}
+    hist = {"best": [], "mean": [], "worst": [], "diversity": []}
     best_so_far, stale, stop = -np.inf, 0, "gerações"
     t0 = time.perf_counter()
 
@@ -98,6 +110,7 @@ def run_ga(cfg: SongConfig, params: GAParams, progress: ProgressFn | None = None
         hist["best"].append(float(fit.max()))
         hist["mean"].append(float(fit.mean()))
         hist["worst"].append(float(fit.min()))
+        hist["diversity"].append(diversity(pop))
         if progress and gen % progress_every == 0:
             progress(gen, hist, pop[np.argmax(fit)])
 
@@ -113,7 +126,11 @@ def run_ga(cfg: SongConfig, params: GAParams, progress: ProgressFn | None = None
         elite = np.argsort(fit)[-params.elitism:] if params.elitism else np.array([], int)
         children = [pop[i].copy() for i in elite]
 
-        n_needed = params.pop_size - len(children)
+        # Imigrantes aleatórios: entram no lugar dos últimos filhos, criados como na
+        # população inicial, para repor material genético que a seleção eliminou.
+        n_imm = min(int(round(params.immigrants * params.pop_size)),
+                    params.pop_size - len(children))
+        n_needed = params.pop_size - len(children) - n_imm
         parents = tournament(fit, params.tournament_k, n_needed + 1, rng)
         for i in range(0, n_needed, 2):
             a, b = pop[parents[i]], pop[parents[i + 1]]
@@ -123,10 +140,12 @@ def run_ga(cfg: SongConfig, params: GAParams, progress: ProgressFn | None = None
                 c1, c2 = a.copy(), b.copy()
             children.append(mutate(c1, space, params.mutation_rate, rng,
                                    lick_rate=params.lick_rate))
-            if len(children) < params.pop_size:
+            if len(children) < params.pop_size - n_imm:
                 children.append(mutate(c2, space, params.mutation_rate, rng,
                                        lick_rate=params.lick_rate))
 
+        children += [random_genome(space, rng, params.init, fp.density, fp.shred,
+                                   params.lick_rate) for _ in range(n_imm)]
         pop = np.stack(children)
         fit = np.array([evaluate(g, space, fp)[0] for g in pop])
 

@@ -49,6 +49,9 @@ for s in range(1, 6):
 for m in (0.1, 0.6):
     for s in range(1, 4):
         specs.append((f"mut{m}", "blues", s, {"mutation_rate": m}))
+for imm in (0.0, 0.15):
+    for s in range(1, 4):
+        specs.append((f"imm{imm}", "blues", s, {"immigrants": imm}))
 for s in range(1, 4):
     specs.append(("nolick", "blues", s, {"lick_rate": 0.0}))
     specs.append(("uniform", "blues", s, {"init": "uniform"}))
